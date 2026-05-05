@@ -168,6 +168,22 @@
 
   .tag { display: inline-block; background: #e8f0ff; color: #2c6fad; border-radius: 4px; padding: 2px 7px; font-size: 0.75rem; font-weight: 600; }
 
+  .mileage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .calc-travel-btn {
+    padding: 10px 22px;
+    background: #1a5276;
+    color: white; border: none;
+    border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.92rem;
+    transition: opacity 0.2s;
+  }
+  .calc-travel-btn:hover { opacity: 0.85; }
+  .travel-result {
+    margin-top: 14px; padding: 14px 18px;
+    background: #f0fff4; border: 1.5px solid #aed6b8;
+    border-radius: 8px; font-size: 0.92rem; display: none;
+  }
+  .travel-result strong { color: #1a5276; }
+
   @media print {
     header { background: #1a2a3a !important; -webkit-print-color-adjust: exact; }
     .no-print { display: none !important; }
@@ -296,6 +312,33 @@
     <button class="add-btn" onclick="addHardwareRow()">+ Add Hardware</button>
   </div>
 
+  <!-- Travel / Pay Per Mile -->
+  <div class="section-card no-print">
+    <h2><span class="icon">🚗</span> Travel & Pay Per Mile</h2>
+    <div class="mileage-grid">
+      <div class="form-group">
+        <label>Total Miles (One Way)</label>
+        <input type="number" id="travelMiles" value="0" min="0" step="0.1" placeholder="e.g. 25" oninput="calcTravel()">
+      </div>
+      <div class="form-group">
+        <label>Rate Per Mile ($)</label>
+        <input type="number" id="ratePerMile" value="0.67" min="0" step="0.01" placeholder="e.g. 0.67" oninput="calcTravel()">
+      </div>
+      <div class="form-group">
+        <label>Round Trip?</label>
+        <select id="roundTrip" onchange="calcTravel()">
+          <option value="1">One Way</option>
+          <option value="2" selected>Round Trip (×2)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Number of Trips</label>
+        <input type="number" id="numTrips" value="1" min="1" placeholder="e.g. 3" oninput="calcTravel()">
+      </div>
+    </div>
+    <div class="travel-result" id="travelResult"></div>
+  </div>
+
   <!-- Calculate -->
   <div class="section-card no-print">
     <button class="calc-btn" onclick="calculate()">📊 Generate Estimate</button>
@@ -334,6 +377,37 @@
 </div>
 
 <script>
+// ===================== TRAVEL =====================
+let mileageCost = 0;
+let mileageDetails = null;
+
+function calcTravel() {
+  const miles = parseFloat(document.getElementById('travelMiles').value) || 0;
+  const rate = parseFloat(document.getElementById('ratePerMile').value) || 0;
+  const trips = parseInt(document.getElementById('numTrips').value) || 1;
+  const multiplier = parseInt(document.getElementById('roundTrip').value) || 1;
+  const totalMiles = miles * multiplier * trips;
+  const cost = totalMiles * rate;
+
+  mileageCost = cost;
+  mileageDetails = { miles, totalMiles, rate, trips, multiplier, cost };
+
+  const resultDiv = document.getElementById('travelResult');
+  if (miles > 0 && rate > 0) {
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `
+      <strong>📏 One-Way Distance:</strong> ${miles.toFixed(1)} miles &nbsp;|&nbsp;
+      <strong>🔁 ${trips} trip(s) × ${multiplier === 2 ? 'Round Trip' : 'One Way'}</strong> = ${totalMiles.toFixed(1)} total miles &nbsp;|&nbsp;
+      <strong>💵 Rate:</strong> $${rate.toFixed(2)}/mile &nbsp;|&nbsp;
+      <strong>🚗 Travel Cost: <span style="font-size:1.1rem;color:#1a5276;">${fmt(cost)}</span></strong>
+    `;
+  } else {
+    resultDiv.style.display = 'none';
+  }
+}
+
+// ===================== TRAVEL =====================
+
 // ===================== DATA =====================
 const SHEETS = [
   { name: "3/4\" Maplewood Maple WHT VC UV-2", thickness: '3/4"', price: 89.50, sqft: 32 },
@@ -627,10 +701,22 @@ function calculate() {
     rows.push({ item: mat.name, cat: 'Hardware', qty: r.qty + ' ea', rate: fmt(mat.price), cost, sell });
   });
 
+  const travelCost = mileageCost || 0;
+  if (travelCost > 0 && mileageDetails) {
+    rows.push({
+      item: `Travel (${mileageDetails.totalMiles.toFixed(1)} mi @ $${mileageDetails.rate.toFixed(2)}/mi)`,
+      cat: 'Travel',
+      qty: mileageDetails.totalMiles.toFixed(1) + ' mi',
+      rate: fmt(mileageDetails.rate) + '/mi',
+      cost: travelCost,
+      sell: travelCost
+    });
+  }
+
   const totalMaterialCost = sheetCost + lumberCost + hwCost;
   const materialSell = totalMaterialCost * (1 + markup);
-  const totalCustomerPrice = materialSell + laborCustomer;
-  const totalInternalCost = totalMaterialCost + laborInternal;
+  const totalCustomerPrice = materialSell + laborCustomer + travelCost;
+  const totalInternalCost = totalMaterialCost + laborInternal + travelCost;
   const grossProfit = totalCustomerPrice - totalInternalCost;
   const marginPct = totalCustomerPrice > 0 ? (grossProfit / totalCustomerPrice * 100) : 0;
 
@@ -642,6 +728,7 @@ function calculate() {
   document.getElementById('summaryBoxes').innerHTML = `
     <div class="summary-box"><div class="label">Material Cost (Us)</div><div class="value">${fmt(totalMaterialCost)}</div></div>
     <div class="summary-box"><div class="label">Labor Cost (Internal)</div><div class="value">${fmt(laborInternal)}</div></div>
+    ${travelCost > 0 ? `<div class="summary-box"><div class="label">Travel Cost</div><div class="value">${fmt(travelCost)}</div></div>` : ''}
     <div class="summary-box"><div class="label">Total Our Cost</div><div class="value">${fmt(totalInternalCost)}</div></div>
     <div class="summary-box highlight"><div class="label">Customer Total</div><div class="value">${fmt(totalCustomerPrice)}</div></div>
     <div class="summary-box"><div class="label">Gross Profit</div><div class="value" style="color:#1a7a1a">${fmt(grossProfit)}</div></div>
@@ -672,8 +759,11 @@ function calculate() {
 
 function resetAll() {
   sheetRows = []; laborRows = []; lumberRows = []; hardwareRows = [];
+  mileageCost = 0; mileageDetails = null;
   ['sheetsBody','laborBody','lumberBody','hardwareBody','breakdownBody'].forEach(id => document.getElementById(id).innerHTML = '');
   document.getElementById('summary').style.display = 'none';
+  document.getElementById('travelResult').style.display = 'none';
+  document.getElementById('travelMiles').value = '0';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
