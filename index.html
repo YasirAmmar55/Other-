@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mesam CA Kitchen Estimation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; color: #222; }
+
+  header {
+    background: linear-gradient(135deg, #1a2a3a 0%, #2c4a6e 100%);
+    color: white;
+    padding: 28px 40px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  header .logo { font-size: 2rem; }
+  header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: 1px; }
+  header p { font-size: 0.9rem; opacity: 0.75; margin-top: 3px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+
+  .section-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .section-card h2 {
+    font-size: 1.1rem;
+    color: #1a2a3a;
+    border-bottom: 2px solid #e8f0ff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-card h2 .icon { font-size: 1.2rem; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select {
+    padding: 9px 12px;
+    border: 1.5px solid #dde3ef;
+    border-radius: 7px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+    background: #fafbfd;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: #2c6fad;
+  }
+
+  /* Line items table */
+  .line-items-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .line-items-table th {
+    background: #f0f4ff;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: #445;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .line-items-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .line-items-table tr:last-child td { border-bottom: none; }
+  .line-items-table select, .line-items-table input[type="number"] {
+    padding: 6px 8px;
+    border: 1.5px solid #dde3ef;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    background: #fafbfd;
+    width: 100%;
+  }
+  .line-items-table select:focus, .line-items-table input:focus { outline: none; border-color: #2c6fad; }
+  .remove-btn {
+    background: #fee;
+    border: none;
+    color: #c00;
+    cursor: pointer;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+  .remove-btn:hover { background: #fcc; }
+
+  .add-btn {
+    margin-top: 14px;
+    padding: 9px 20px;
+    background: #e8f0ff;
+    color: #1a4a8a;
+    border: 1.5px dashed #6090d0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .add-btn:hover { background: #d4e4ff; }
+
+  .calc-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #1a5276, #2e86c1);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+    transition: opacity 0.2s;
+  }
+  .calc-btn:hover { opacity: 0.9; }
+
+  /* Summary */
+  #summary { display: none; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .summary-box {
+    background: #f0f6ff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: center;
+    border: 1.5px solid #cde;
+  }
+  .summary-box .label { font-size: 0.78rem; text-transform: uppercase; color: #666; font-weight: 600; margin-bottom: 6px; }
+  .summary-box .value { font-size: 1.5rem; font-weight: 800; color: #1a2a3a; }
+  .summary-box.highlight { background: #1a5276; border-color: #1a5276; }
+  .summary-box.highlight .label { color: #adf; }
+  .summary-box.highlight .value { color: white; }
+
+  .breakdown-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .breakdown-table th { background: #1a2a3a; color: white; padding: 10px 14px; text-align: left; }
+  .breakdown-table td { padding: 9px 14px; border-bottom: 1px solid #eee; }
+  .breakdown-table tr:nth-child(even) td { background: #f8f9fc; }
+  .breakdown-table .total-row td { font-weight: 700; background: #e8f4ff; font-size: 1rem; }
+
+  .profit-row td { color: #1a7a1a; font-weight: 700; }
+
+  .print-btn {
+    padding: 10px 22px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  .print-btn:hover { background: #229954; }
+  .reset-btn {
+    padding: 10px 22px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    margin-left: 12px;
+  }
+
+  .tag { display: inline-block; background: #e8f0ff; color: #2c6fad; border-radius: 4px; padding: 2px 7px; font-size: 0.75rem; font-weight: 600; }
+
+  @media print {
+    header { background: #1a2a3a !important; -webkit-print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    #summary { display: block !important; }
+    .section-card { box-shadow: none; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🪵</div>
+  <div>
+    <h1>Mesam CA Kitchen Estimation</h1>
+    <p>Professional project cost estimation tool</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Project Info -->
+  <div class="section-card no-print">
+    <h2><span class="icon">📋</span> Project Information</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Client Name</label>
+        <input type="text" id="clientName" placeholder="e.g. John Smith">
+      </div>
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" id="projectName" placeholder="e.g. Kitchen Renovation">
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="projectDate">
+      </div>
+      <div class="form-group">
+        <label>Markup / Margin %</label>
+        <input type="number" id="markup" value="20" min="0" max="100" placeholder="e.g. 20">
+      </div>
+    </div>
+  </div>
+
+  <!-- Sheet Goods -->
+  <div class="section-card no-print">
+    <h2><span class="icon">🟫</span> Sheet Goods</h2>
+    <div style="overflow-x:auto;">
+      <table class="line-items-table" id="sheetsTable">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>Thickness</th>
+            <th>Unit Price/Sheet</th>
+            <th>Sheets</th>
+            <th>Sqft/Sheet</th>
+            <th>Material Cost</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sheetsBody"></tbody>
+      </table>
+    </div>
+    <button class="add-btn" onclick="addSheetRow()">+ Add Sheet Material</button>
+  </div>
+
+  <!-- Labor -->
+  <div class="section-card no-print">
+    <h2><span class="icon">🔨</span> Labor</h2>
+    <div style="overflow-x:auto;">
+      <table class="line-items-table" id="laborTable">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Customer Rate ($/sqft)</th>
+            <th>Internal Rate ($/sqft)</th>
+            <th>Sqft</th>
+            <th>Customer Charge</th>
+            <th>Internal Cost</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="laborBody"></tbody>
+      </table>
+    </div>
+    <button class="add-btn" onclick="addLaborRow()">+ Add Labor</button>
+  </div>
+
+  <!-- Lumber -->
+  <div class="section-card no-print">
+    <h2><span class="icon">🌲</span> Hardwood Lumber</h2>
+    <div style="overflow-x:auto;">
+      <table class="line-items-table" id="lumberTable">
+        <thead>
+          <tr>
+            <th>Species / Grade</th>
+            <th>Thickness</th>
+            <th>Price/BF</th>
+            <th>Board Feet</th>
+            <th>Material Cost</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="lumberBody"></tbody>
+      </table>
+    </div>
+    <button class="add-btn" onclick="addLumberRow()">+ Add Lumber</button>
+  </div>
+
+  <!-- Hardware -->
+  <div class="section-card no-print">
+    <h2><span class="icon">🔩</span> Hardware & Accessories</h2>
+    <div style="overflow-x:auto;">
+      <table class="line-items-table" id="hardwareTable">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Unit Price</th>
+            <th>Qty</th>
+            <th>Line Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="hardwareBody"></tbody>
+      </table>
+    </div>
+    <button class="add-btn" onclick="addHardwareRow()">+ Add Hardware</button>
+  </div>
+
+  <!-- Calculate -->
+  <div class="section-card no-print">
+    <button class="calc-btn" onclick="calculate()">📊 Generate Estimate</button>
+  </div>
+
+  <!-- Summary -->
+  <div class="section-card" id="summary">
+    <h2><span class="icon">💰</span> Estimate Summary</h2>
+    <div id="projectMeta" style="margin-bottom:16px; color:#555; font-size:0.92rem;"></div>
+
+    <div class="summary-grid" id="summaryBoxes"></div>
+
+    <h3 style="margin: 20px 0 12px; color:#1a2a3a;">Cost Breakdown</h3>
+    <div style="overflow-x:auto;">
+      <table class="breakdown-table" id="breakdownTable">
+        <thead>
+          <tr>
+            <th>Line Item</th>
+            <th>Category</th>
+            <th>Qty/Sqft</th>
+            <th>Unit Rate</th>
+            <th>Cost to Us</th>
+            <th>Customer Price</th>
+          </tr>
+        </thead>
+        <tbody id="breakdownBody"></tbody>
+      </table>
+    </div>
+
+    <div>
+      <button class="print-btn no-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+      <button class="reset-btn no-print" onclick="resetAll()">🔄 New Estimate</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===================== DATA =====================
+const SHEETS = [
+  { name: "3/4\" Maplewood Maple WHT VC UV-2", thickness: '3/4"', price: 89.50, sqft: 32 },
+  { name: "1/2\" Maplewood Maple WHT VC UV-2", thickness: '1/2"', price: 82.50, sqft: 32 },
+  { name: "1/4\" Maplewood Maple WHT MDF UV-1-Face", thickness: '1/4"', price: 44.00, sqft: 32 },
+  { name: "19mm Maplewood Birch WHT VC UV-2", thickness: '19mm', price: 67.50, sqft: 32 },
+  { name: "12mm Maplewood Birch WHT VCAB UV-2", thickness: '12mm', price: 43.50, sqft: 32 },
+  { name: "5.2mm Maplewood Birch WHT VCAB UV-1-Face", thickness: '5.2mm', price: 25.50, sqft: 32 },
+  { name: "3/4\" White Oak MDF", thickness: '3/4"', price: 169.90, sqft: 32 },
+  { name: "1/2\" White Oak MDF", thickness: '1/2"', price: 140.00, sqft: 32 },
+  { name: "5.2mm White Oak MDF", thickness: '5.2mm', price: 49.90, sqft: 32 },
+];
+
+const LABOR = [
+  { name: "MDF / Melamine Cabinets", internal: 8, customer: 22 },
+  { name: "Birch Veneer Cabinets", internal: 10, customer: 28 },
+  { name: "Maple Veneer Cabinets", internal: 11, customer: 32 },
+  { name: "White Oak Veneer Cabinets", internal: 14, customer: 42 },
+  { name: "Rift White Oak Cabinets", internal: 18, customer: 58 },
+  { name: "Walnut Veneer Cabinets", internal: 20, customer: 65 },
+  { name: "Solid Hardwood Cabinets", internal: 22, customer: 75 },
+  { name: "Painted MDF Cabinets", internal: 10, customer: 30 },
+  { name: "Laminate Cabinets", internal: 9, customer: 24 },
+  { name: "High Gloss / Acrylic Panels", internal: 12, customer: 36 },
+  { name: "Custom Millwork / Luxury Joinery", internal: 25, customer: 95 },
+];
+
+const LUMBER = [
+  { name: "Sel/Btr Soft Maple Brown S2S R1E", thickness: "4/4", price: 3.95 },
+  { name: "Sel/Btr Prem Hard Maple #1/#2 WHT S2S R1E", thickness: "4/4", price: 4.65 },
+  { name: "Sel/Btr White Oak S2S R1E", thickness: "4/4", price: 7.10 },
+  { name: "Sel/Btr Rift White Oak S2S SLR1E", thickness: "4/4", price: 13.25 },
+];
+
+const HARDWARE = [
+  { name: "HINGE, CLIP TOP BLM 110 STRAIGHT-ARM SCREW-ON", price: 3.62 },
+  { name: "PLATE, CLIP-ON OMM 70000 SERIES", price: 0.96 },
+  { name: "SLIDE, TANDEM PLUS 381MM FULL EXT. W/BLUMOTION", price: 21.85 },
+  { name: "SLIDE, TANDEM PLUS 457MM FULL EXT. W/BLUMOTION", price: 20.61 },
+  { name: "SLIDE, TANDEM PLUS 533MM FULL EXT. W/BLUMOTION", price: 21.26 },
+  { name: "LOCKING DEVICE LEFT 563/569 STANDARD", price: 1.60 },
+  { name: "LOCKING DEVICE RIGHT 563/569 STANDARD", price: 1.60 },
+  { name: "MOVENTO DRAWER RUNNER FULL EXT S VERSION (28.89)", price: 28.89 },
+  { name: "MOVENTO DRAWER RUNNER FULL EXT S VERSION (27.73)", price: 27.73 },
+  { name: "MOVENTO DRAWER RUNNER FULL EXT S VERSION (28.04)", price: 28.04 },
+  { name: "LOCKING DEVICE MOVENTO LEFT HAND STANDARD", price: 1.83 },
+  { name: "LOCKING DEVICE MOVENTO RIGHT HAND STANDARD", price: 1.83 },
+  { name: "L1 TIP-ON/LEGRA/MOVENTO LT GRAY 14-22\" CAB PROFIL", price: 20.31 },
+  { name: "SYNCHRO ROD LEGRABOX MOVENTO", price: 6.78 },
+  { name: "PLATE, CLIP-ON 9MM 70000 SERIES", price: 1.45 },
+  { name: "ACETONE 5-GAL PAIL", price: 69.64 },
+  { name: "WASTE CONTAINER 15\" PLASTIC GRAY 32QT 2EA", price: 159.25 },
+  { name: "WASTE CONTAINER 18\" PLASTIC GRAY 32QT 2EA", price: 171.33 },
+  { name: "WASTE CONTAINER 21\" PLASTIC GRAY 35QT 2EA", price: 201.61 },
+  { name: "TITEBOND II GAL WATER RESISTANT", price: 22.53 },
+  { name: "TITEBOND II 5-GAL PAIL", price: 108.17 },
+  { name: "#8 X 1-1/4\" SCREW B9K (box)", price: 146.08 },
+  { name: "#8 X 1-1/2\" SCREW B7K (box)", price: 135.20 },
+  { name: "#8 X 2\" SCREW B4K (box)", price: 111.09 },
+  { name: "#9 X 3\" SCREW B2K (box)", price: 85.67 },
+  { name: "#7 X 3/4\" NP SCREW B1K (box)", price: 15.03 },
+  { name: "#7 X 5/8\" NP SCREW B1K (box)", price: 14.25 },
+  { name: "BRAD 1-1/4\" 18GA 5K/BX", price: 11.77 },
+  { name: "BRAD 1-1/2\" 18GA 5K/BX", price: 12.37 },
+  { name: "PIN 5/8\" 18GA 5K/BX", price: 8.69 },
+  { name: "PIN 3/4\" 18GA 5K/BX", price: 5.00 },
+  { name: "6\" BASE ORGANIZER W/BLUM SC FRAMELESS CABINET", price: 220.00 },
+  { name: "8\" BASE ORGANIZER WITH BLUM SOFT CLOSE SLIDES", price: 230.36 },
+];
+
+// ===================== BUILD SELECTS =====================
+function sheetsSelect(id) {
+  return `<select onchange="updateSheetRow(this)" data-id="${id}">
+    ${SHEETS.map((s,i) => `<option value="${i}">${s.name}</option>`).join('')}
+  </select>`;
+}
+function laborSelect(id) {
+  return `<select onchange="updateLaborRow(this)" data-id="${id}">
+    ${LABOR.map((l,i) => `<option value="${i}">${l.name}</option>`).join('')}
+  </select>`;
+}
+function lumberSelect(id) {
+  return `<select onchange="updateLumberRow(this)" data-id="${id}">
+    ${LUMBER.map((l,i) => `<option value="${i}">${l.name}</option>`).join('')}
+  </select>`;
+}
+function hardwareSelect(id) {
+  return `<select onchange="updateHardwareRow(this)" data-id="${id}">
+    ${HARDWARE.map((h,i) => `<option value="${i}">${h.name}</option>`).join('')}
+  </select>`;
+}
+
+let sheetRows = [], laborRows = [], lumberRows = [], hardwareRows = [];
+let rowCounter = 0;
+
+function uid() { return ++rowCounter; }
+
+function addSheetRow() {
+  const id = uid();
+  const def = SHEETS[0];
+  sheetRows.push({ id, matIdx: 0, qty: 1 });
+  const tbody = document.getElementById('sheetsBody');
+  const tr = document.createElement('tr');
+  tr.id = 'sr-' + id;
+  tr.innerHTML = `
+    <td>${sheetsSelect(id)}</td>
+    <td><span id="s-thick-${id}">${def.thickness}</span></td>
+    <td>$<span id="s-price-${id}">${def.price.toFixed(2)}</span></td>
+    <td><input type="number" min="1" value="1" onchange="qtyChange(this,'sheet',${id})" style="width:70px"></td>
+    <td>${def.sqft}</td>
+    <td>$<span id="s-total-${id}">${def.price.toFixed(2)}</span></td>
+    <td><button class="remove-btn" onclick="removeRow('sheet',${id})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function addLaborRow() {
+  const id = uid();
+  const def = LABOR[0];
+  laborRows.push({ id, matIdx: 0, sqft: 100 });
+  const tbody = document.getElementById('laborBody');
+  const tr = document.createElement('tr');
+  tr.id = 'lr-' + id;
+  tr.innerHTML = `
+    <td>${laborSelect(id)}</td>
+    <td>$<span id="l-cust-${id}">${def.customer}</span>/sqft</td>
+    <td>$<span id="l-int-${id}">${def.internal}</span>/sqft</td>
+    <td><input type="number" min="1" value="100" onchange="qtyChange(this,'labor',${id})" style="width:80px"></td>
+    <td>$<span id="l-ctotal-${id}">${(def.customer*100).toFixed(2)}</span></td>
+    <td>$<span id="l-itotal-${id}">${(def.internal*100).toFixed(2)}</span></td>
+    <td><button class="remove-btn" onclick="removeRow('labor',${id})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function addLumberRow() {
+  const id = uid();
+  const def = LUMBER[0];
+  lumberRows.push({ id, matIdx: 0, qty: 10 });
+  const tbody = document.getElementById('lumberBody');
+  const tr = document.createElement('tr');
+  tr.id = 'llr-' + id;
+  tr.innerHTML = `
+    <td>${lumberSelect(id)}</td>
+    <td>${def.thickness}</td>
+    <td>$<span id="ll-price-${id}">${def.price.toFixed(2)}</span>/BF</td>
+    <td><input type="number" min="1" value="10" onchange="qtyChange(this,'lumber',${id})" style="width:80px"></td>
+    <td>$<span id="ll-total-${id}">${(def.price*10).toFixed(2)}</span></td>
+    <td><button class="remove-btn" onclick="removeRow('lumber',${id})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function addHardwareRow() {
+  const id = uid();
+  const def = HARDWARE[0];
+  hardwareRows.push({ id, matIdx: 0, qty: 1 });
+  const tbody = document.getElementById('hardwareBody');
+  const tr = document.createElement('tr');
+  tr.id = 'hr-' + id;
+  tr.innerHTML = `
+    <td>${hardwareSelect(id)}</td>
+    <td>$<span id="hw-price-${id}">${def.price.toFixed(2)}</span></td>
+    <td><input type="number" min="1" value="1" onchange="qtyChange(this,'hardware',${id})" style="width:70px"></td>
+    <td>$<span id="hw-total-${id}">${def.price.toFixed(2)}</span></td>
+    <td><button class="remove-btn" onclick="removeRow('hardware',${id})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function updateSheetRow(sel) {
+  const id = parseInt(sel.dataset.id);
+  const idx = parseInt(sel.value);
+  const row = sheetRows.find(r => r.id === id);
+  if (row) { row.matIdx = idx; refreshSheetTotals(id); }
+}
+function updateLaborRow(sel) {
+  const id = parseInt(sel.dataset.id);
+  const idx = parseInt(sel.value);
+  const row = laborRows.find(r => r.id === id);
+  if (row) {
+    row.matIdx = idx;
+    const def = LABOR[idx];
+    document.getElementById('l-cust-'+id).textContent = def.customer;
+    document.getElementById('l-int-'+id).textContent = def.internal;
+    refreshLaborTotals(id);
+  }
+}
+function updateLumberRow(sel) {
+  const id = parseInt(sel.dataset.id);
+  const idx = parseInt(sel.value);
+  const row = lumberRows.find(r => r.id === id);
+  if (row) {
+    row.matIdx = idx;
+    document.getElementById('ll-price-'+id).textContent = LUMBER[idx].price.toFixed(2);
+    refreshLumberTotals(id);
+  }
+}
+function updateHardwareRow(sel) {
+  const id = parseInt(sel.dataset.id);
+  const idx = parseInt(sel.value);
+  const row = hardwareRows.find(r => r.id === id);
+  if (row) {
+    row.matIdx = idx;
+    document.getElementById('hw-price-'+id).textContent = HARDWARE[idx].price.toFixed(2);
+    refreshHardwareTotals(id);
+  }
+}
+
+function qtyChange(inp, type, id) {
+  const v = parseFloat(inp.value) || 0;
+  if (type === 'sheet') { const r = sheetRows.find(x=>x.id===id); if(r){r.qty=v;refreshSheetTotals(id);} }
+  if (type === 'labor') { const r = laborRows.find(x=>x.id===id); if(r){r.sqft=v;refreshLaborTotals(id);} }
+  if (type === 'lumber') { const r = lumberRows.find(x=>x.id===id); if(r){r.qty=v;refreshLumberTotals(id);} }
+  if (type === 'hardware') { const r = hardwareRows.find(x=>x.id===id); if(r){r.qty=v;refreshHardwareTotals(id);} }
+}
+
+function refreshSheetTotals(id) {
+  const row = sheetRows.find(r=>r.id===id);
+  const mat = SHEETS[row.matIdx];
+  const total = mat.price * row.qty;
+  document.getElementById('s-thick-'+id).textContent = mat.thickness;
+  document.getElementById('s-price-'+id).textContent = mat.price.toFixed(2);
+  document.getElementById('s-total-'+id).textContent = total.toFixed(2);
+}
+function refreshLaborTotals(id) {
+  const row = laborRows.find(r=>r.id===id);
+  const mat = LABOR[row.matIdx];
+  document.getElementById('l-ctotal-'+id).textContent = (mat.customer*row.sqft).toFixed(2);
+  document.getElementById('l-itotal-'+id).textContent = (mat.internal*row.sqft).toFixed(2);
+}
+function refreshLumberTotals(id) {
+  const row = lumberRows.find(r=>r.id===id);
+  const mat = LUMBER[row.matIdx];
+  document.getElementById('ll-total-'+id).textContent = (mat.price*row.qty).toFixed(2);
+}
+function refreshHardwareTotals(id) {
+  const row = hardwareRows.find(r=>r.id===id);
+  const mat = HARDWARE[row.matIdx];
+  document.getElementById('hw-total-'+id).textContent = (mat.price*row.qty).toFixed(2);
+}
+
+function removeRow(type, id) {
+  if (type === 'sheet') { sheetRows = sheetRows.filter(r=>r.id!==id); document.getElementById('sr-'+id)?.remove(); }
+  if (type === 'labor') { laborRows = laborRows.filter(r=>r.id!==id); document.getElementById('lr-'+id)?.remove(); }
+  if (type === 'lumber') { lumberRows = lumberRows.filter(r=>r.id!==id); document.getElementById('llr-'+id)?.remove(); }
+  if (type === 'hardware') { hardwareRows = hardwareRows.filter(r=>r.id!==id); document.getElementById('hr-'+id)?.remove(); }
+}
+
+function fmt(n) { return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function calculate() {
+  const markup = (parseFloat(document.getElementById('markup').value) || 0) / 100;
+  const client = document.getElementById('clientName').value || '—';
+  const project = document.getElementById('projectName').value || '—';
+  const date = document.getElementById('projectDate').value || new Date().toISOString().split('T')[0];
+
+  let sheetCost = 0, laborInternal = 0, laborCustomer = 0, lumberCost = 0, hwCost = 0;
+  const rows = [];
+
+  sheetRows.forEach(r => {
+    const mat = SHEETS[r.matIdx];
+    const cost = mat.price * r.qty;
+    const sell = cost * (1 + markup);
+    sheetCost += cost;
+    rows.push({ item: mat.name, cat: 'Sheet Goods', qty: r.qty + ' sheets', rate: fmt(mat.price) + '/sheet', cost, sell });
+  });
+
+  laborRows.forEach(r => {
+    const mat = LABOR[r.matIdx];
+    const intCost = mat.internal * r.sqft;
+    const custCharge = mat.customer * r.sqft;
+    laborInternal += intCost;
+    laborCustomer += custCharge;
+    rows.push({ item: mat.name, cat: 'Labor', qty: r.sqft + ' sqft', rate: fmt(mat.customer) + '/sqft', cost: intCost, sell: custCharge });
+  });
+
+  lumberRows.forEach(r => {
+    const mat = LUMBER[r.matIdx];
+    const cost = mat.price * r.qty;
+    const sell = cost * (1 + markup);
+    lumberCost += cost;
+    rows.push({ item: mat.name, cat: 'Lumber', qty: r.qty + ' BF', rate: fmt(mat.price) + '/BF', cost, sell });
+  });
+
+  hardwareRows.forEach(r => {
+    const mat = HARDWARE[r.matIdx];
+    const cost = mat.price * r.qty;
+    const sell = cost * (1 + markup);
+    hwCost += cost;
+    rows.push({ item: mat.name, cat: 'Hardware', qty: r.qty + ' ea', rate: fmt(mat.price), cost, sell });
+  });
+
+  const totalMaterialCost = sheetCost + lumberCost + hwCost;
+  const materialSell = totalMaterialCost * (1 + markup);
+  const totalCustomerPrice = materialSell + laborCustomer;
+  const totalInternalCost = totalMaterialCost + laborInternal;
+  const grossProfit = totalCustomerPrice - totalInternalCost;
+  const marginPct = totalCustomerPrice > 0 ? (grossProfit / totalCustomerPrice * 100) : 0;
+
+  // Show summary
+  document.getElementById('summary').style.display = 'block';
+  document.getElementById('projectMeta').innerHTML =
+    `<strong>Client:</strong> ${client} &nbsp;|&nbsp; <strong>Project:</strong> ${project} &nbsp;|&nbsp; <strong>Date:</strong> ${date}`;
+
+  document.getElementById('summaryBoxes').innerHTML = `
+    <div class="summary-box"><div class="label">Material Cost (Us)</div><div class="value">${fmt(totalMaterialCost)}</div></div>
+    <div class="summary-box"><div class="label">Labor Cost (Internal)</div><div class="value">${fmt(laborInternal)}</div></div>
+    <div class="summary-box"><div class="label">Total Our Cost</div><div class="value">${fmt(totalInternalCost)}</div></div>
+    <div class="summary-box highlight"><div class="label">Customer Total</div><div class="value">${fmt(totalCustomerPrice)}</div></div>
+    <div class="summary-box"><div class="label">Gross Profit</div><div class="value" style="color:#1a7a1a">${fmt(grossProfit)}</div></div>
+    <div class="summary-box"><div class="label">Margin %</div><div class="value">${marginPct.toFixed(1)}%</div></div>
+  `;
+
+  const tbody = document.getElementById('breakdownBody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.item}</td><td><span class="tag">${r.cat}</span></td><td>${r.qty}</td><td>${r.rate}</td><td>${fmt(r.cost)}</td><td>${fmt(r.sell)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Totals row
+  const totTr = document.createElement('tr');
+  totTr.className = 'total-row';
+  totTr.innerHTML = `<td colspan="4">TOTAL</td><td>${fmt(totalInternalCost)}</td><td>${fmt(totalCustomerPrice)}</td>`;
+  tbody.appendChild(totTr);
+
+  const profTr = document.createElement('tr');
+  profTr.className = 'profit-row';
+  profTr.innerHTML = `<td colspan="4">Gross Profit / Margin</td><td colspan="2">${fmt(grossProfit)} &nbsp;(${marginPct.toFixed(1)}%)</td>`;
+  tbody.appendChild(profTr);
+
+  document.getElementById('summary').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetAll() {
+  sheetRows = []; laborRows = []; lumberRows = []; hardwareRows = [];
+  ['sheetsBody','laborBody','lumberBody','hardwareBody','breakdownBody'].forEach(id => document.getElementById(id).innerHTML = '');
+  document.getElementById('summary').style.display = 'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Set today's date
+document.getElementById('projectDate').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
